@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: peblo_tv_db
     restart: unless-stopped
+    command: ["postgres", "-c", "log_min_messages=warning", "-c", "log_statement=none", "-c", "log_connections=off", "-c", "log_disconnections=off"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -39,6 +40,8 @@ services:
     restart: unless-stopped
     ports:
       - "${CMS_PORT:-3000}:80"
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
     depends_on:
       - api
 
@@ -48,6 +51,8 @@ services:
     restart: unless-stopped
     ports:
       - "${VIEWER_PORT:-3001}:80"
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: "1"
     depends_on:
       - api
 

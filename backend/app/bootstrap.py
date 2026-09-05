@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 import logging
+import os
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +14,8 @@ from app.services.catalog import (
 )
 from app.storage import StorageBackend, get_storage
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING").upper()
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.WARNING), format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 

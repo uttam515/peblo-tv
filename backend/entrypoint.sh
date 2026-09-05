@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-echo "==> Waiting for database readiness..."
 python - << 'EOF'
 import asyncio
 import os
@@ -19,25 +18,24 @@ async def wait_for_db():
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-            print("==> Database is ready!")
             await engine.dispose()
             return
-        except Exception as e:
-            if i % 5 == 0:
-                print(f"==> Waiting for database connection... ({i + 1}/{max_retries})")
+        except Exception:
             time.sleep(1)
-    print("==> Failed to connect to database within timeout.")
+    print("==> Failed to connect to database within timeout.", file=sys.stderr)
     await engine.dispose()
     sys.exit(1)
 
 asyncio.run(wait_for_db())
 EOF
 
-echo "==> Running database migrations (alembic upgrade head)..."
 alembic upgrade head
-
-echo "==> Running application bootstrap..."
 python -m app.bootstrap
 
-echo "==> Starting FastAPI server..."
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+echo ""
+echo "CMS:    http://localhost:3000"
+echo "Viewer: http://localhost:3001"
+echo "API:    http://localhost:8000"
+echo ""
+
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level warning --no-access-log

@@ -14,7 +14,8 @@ from app.db import async_session_maker
 from app.models import Artwork, Category, Episode, Season, Show, User
 from app.storage import get_storage
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "WARNING").upper()
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.WARNING), format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
