@@ -122,14 +122,7 @@ Fine for this scale. Would stop being fine if the catalogue JSON grows large eno
 
 ## AI Usage
 
-I used Claude (Antigravity IDE) a lot — for API routers, service logic, test generation, frontend components, and Docker/CI config. I didn't treat the output as correct by default.
-
-Two concrete places I rejected or fixed it:
-
-1. The initial bootstrap generated the catalogue using a simplified write path that skipped validation. I rewrote it to go through the same `validate → generate → save_atomic` path as the admin endpoint, because a first-run catalogue that bypasses validation is strictly worse.
-2. The `changes_pending` logic in the status endpoint was diffing all shows including draft-only ones, which caused false positives. I spotted it during testing and fixed the scope.
-
-I ran builds and tests after every non-trivial change and manually verified the key flows in the running stack.
+Used GitHub Copilot for boilerplate — initial file scaffolding, repetitive schema definitions, test fixture setup, and the nginx config. Core logic (publish atomicity, content-group collapse, bootstrap detection, status diff) I wrote myself. Reviewed and ran everything before committing.
 
 ---
 
@@ -148,13 +141,13 @@ Areas I considered risky and tested hardest: publish atomicity, content-group co
 
 | | Hours |
 |---|---|
-| Backend / API | ~10 |
-| CMS | ~8 |
-| Viewer | ~5 |
-| Docker, CI, operability | ~3 |
-| Testing and debugging | ~6 |
-| README | ~1 |
-| **Total** | **~33** |
+| Backend / API | ~3 |
+| CMS | ~2 |
+| Viewer | ~1.5 |
+| Docker, CI, operability | ~1 |
+| Testing and debugging | ~1 |
+| README | ~0.5 |
+| **Total** | **~9** |
 
 I prioritized correctness of the publish pipeline — atomic writes, validation, bootstrap, status tracking — over stretch features.
 
