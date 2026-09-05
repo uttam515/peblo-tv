@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Set
 
@@ -8,8 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.auth import hash_password
 from app.db import async_session_maker
-from app.models import Category, Episode, Season, Show
+from app.models import Artwork, Category, Episode, Season, Show, User
+from app.storage import get_storage
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -215,13 +218,93 @@ async def seed_database(session: AsyncSession):
             session.add(ep_obj)
             ep_map[ep_id] = ep_obj
 
+    # 5. Sync Development Users (Admin & Editor)
+    admin_user = os.getenv("SEED_ADMIN_USERNAME", "admin")
+    admin_pass = os.getenv("SEED_ADMIN_PASSWORD", "adminpassword")
+    editor_user = os.getenv("SEED_EDITOR_USERNAME", "editor")
+    editor_pass = os.getenv("SEED_EDITOR_PASSWORD", "editorpassword")
+
+    existing_users = (await session.execute(select(User))).scalars().all()
+    user_map = {u.username: u for u in existing_users}
+
+    if admin_user not in user_map:
+        session.add(
+            User(
+                username=admin_user,
+                password_hash=hash_password(admin_pass),
+                role="admin",
+            )
+        )
+        user_map[admin_user] = True
+    else:
+        user_map[admin_user].role = "admin"
+
+    if editor_user not in user_map:
+        session.add(
+            User(
+                username=editor_user,
+                password_hash=hash_password(editor_pass),
+                role="editor",
+            )
+        )
+    # 6. Seed Provided Artwork Fixtures for Episodes
+    storage = get_storage()
+    artwork_dir = find_data_dir() / "artwork"
+    poster_path = artwork_dir / "poster_good.jpg"
+    banner_path = artwork_dir / "banner_good.jpg"
+    thumb_path = artwork_dir / "thumb_good.jpg"
+
+    if poster_path.exists() and banner_path.exists() and thumb_path.exists():
+        poster_bytes = poster_path.read_bytes()
+        banner_bytes = banner_path.read_bytes()
+        thumb_bytes = thumb_path.read_bytes()
+
+        existing_arts = (await session.execute(select(Artwork))).scalars().all()
+        art_map: Dict[tuple, Artwork] = {(a.episode_id, a.artwork_type): a for a in existing_arts}
+
+        specs = [
+            ("poster", poster_bytes, "poster.jpg", 600, 900),
+            ("banner", banner_bytes, "banner.jpg", 1280, 720),
+            ("thumbnail", thumb_bytes, "thumbnail.jpg", 640, 360),
+        ]
+
+        artwork_count = 0
+        for ep in ep_map.values():
+            for art_type, file_content, filename, width, height in specs:
+                storage_file_path = f"artwork/{ep.episode_id}/{filename}"
+                await storage.save(storage_file_path, file_content, content_type="image/jpeg")
+
+                key = (ep.id, art_type)
+                if key in art_map:
+                    art_obj = art_map[key]
+                    art_obj.file_path = storage_file_path
+                    art_obj.width = width
+                    art_obj.height = height
+                    art_obj.file_size = len(file_content)
+                    art_obj.mime_type = "image/jpeg"
+                else:
+                    art_obj = Artwork(
+                        episode_id=ep.id,
+                        artwork_type=art_type,
+                        file_path=storage_file_path,
+                        width=width,
+                        height=height,
+                        file_size=len(file_content),
+                        mime_type="image/jpeg",
+                    )
+                    session.add(art_obj)
+                    art_map[key] = art_obj
+                artwork_count += 1
+        logger.info("Seeded %d artwork records across %d episodes.", artwork_count, len(ep_map))
+
     await session.commit()
     logger.info(
-        "Seeding completed successfully: %d categories, %d shows, %d seasons, %d episodes.",
+        "Seeding completed successfully: %d categories, %d shows, %d seasons, %d episodes, %d users.",
         len(cat_map),
         len(show_map),
         len(season_map),
         len(clean_episodes),
+        len(user_map),
     )
 
 

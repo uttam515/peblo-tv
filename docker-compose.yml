@@ -31,6 +31,25 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/app/data:ro
+      - ./storage:/app/storage
+
+  cms:
+    build: ./cms
+    container_name: peblo_tv_cms
+    restart: unless-stopped
+    ports:
+      - "${CMS_PORT:-3000}:80"
+    depends_on:
+      - api
+
+  viewer:
+    build: ./viewer
+    container_name: peblo_tv_viewer
+    restart: unless-stopped
+    ports:
+      - "${VIEWER_PORT:-3001}:80"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
