@@ -195,11 +195,7 @@ async def publish_series(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    stmt = (
-        select(Show)
-        .options(selectinload(Show.seasons).selectinload(Season.episodes))
-        .where(Show.id == show_id)
-    )
+    stmt = select(Show).where(Show.id == show_id)
     show = (await db.execute(stmt)).scalar_one_or_none()
 
     if not show:
@@ -208,41 +204,14 @@ async def publish_series(
             detail="Show not found",
         )
 
-    episodes_to_publish: list[Episode] = []
-    invalid_episodes: list[str] = []
-
-    for season in show.seasons:
-        for episode in season.episodes:
-            if episode.status == "draft":
-                if episode.duration_seconds is None or episode.duration_seconds <= 0:
-                    invalid_episodes.append(
-                        f"Episode '{episode.episode_id}' ({episode.title}) is missing duration_seconds"
-                    )
-                else:
-                    episodes_to_publish.append(episode)
-
-    if invalid_episodes:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
-            if hasattr(status, "HTTP_422_UNPROCESSABLE_CONTENT") is False
-            else status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={
-                "message": "Cannot publish series: some draft episodes have invalid data",
-                "errors": invalid_episodes,
-            },
-        )
-
     show.status = "published"
-    for ep in episodes_to_publish:
-        ep.status = "published"
-
     await db.commit()
 
     return PublishSeriesResponse(
         show_id=show.id,
         show_title=show.title,
         show_status=show.status,
-        episodes_published_count=len(episodes_to_publish),
-        message=f"Show '{show.title}' and {len(episodes_to_publish)} draft episode(s) published successfully.",
+        episodes_published_count=0,
+        message=f"Show '{show.title}' published successfully.",
     )
 

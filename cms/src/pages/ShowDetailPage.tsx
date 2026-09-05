@@ -185,9 +185,13 @@ export const ShowDetailPage: React.FC = () => {
                   {seasons?.length || 0} {seasons?.length === 1 ? 'Season' : 'Seasons'}
                 </span>
 
-                {show.section && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 capitalize">
+                {show.section ? (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full font-semibold bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 capitalize" data-testid="show-section-tag">
                     {show.section}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full font-medium bg-slate-800 border border-slate-700/40 text-slate-400 italic" data-testid="show-section-tag">
+                    No Section
                   </span>
                 )}
 
@@ -215,7 +219,7 @@ export const ShowDetailPage: React.FC = () => {
             <div className="flex items-center gap-3 self-start flex-wrap">
               <button
                 onClick={() => setIsEditShowModalOpen(true)}
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/50 transition-colors inline-flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/50 transition-colors inline-flex items-center gap-2 shadow-sm cursor-pointer"
                 data-testid="edit-show-btn"
               >
                 <EditIcon className="w-4 h-4" />
@@ -223,11 +227,12 @@ export const ShowDetailPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setIsPublishSeriesModalOpen(true)}
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-600 border border-emerald-500/20 transition-colors inline-flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-600 border border-emerald-500/20 transition-colors inline-flex items-center gap-2 shadow-sm cursor-pointer"
                 data-testid="publish-series-btn"
+                aria-label="Publish Show"
               >
                 <PublishIcon className="w-4 h-4" />
-                Publish Series
+                Publish Show
               </button>
             </div>
           </div>

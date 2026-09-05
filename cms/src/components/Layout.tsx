@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { getCatalogStatus } from '../api/publish';
 import { DashboardIcon, ShowsIcon, PublishIcon, TvIcon } from './icons';
+import { ErrorBoundary } from './ErrorBoundary';
 
 export const Layout: React.FC = () => {
   const { user, isAdmin, logout } = useAuth();
@@ -167,7 +168,9 @@ export const Layout: React.FC = () => {
       {/* Main content with independent scroll and footer */}
       <main className="flex-1 bg-[#0f172a] p-8 h-screen overflow-y-auto flex flex-col justify-between">
         <div className="flex-1">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
         <footer className="mt-12 pt-6 border-t border-slate-800/80 text-center text-xs text-slate-500">
           Made with ❤️ in India

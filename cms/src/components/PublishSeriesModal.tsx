@@ -9,7 +9,7 @@ interface PublishSeriesModalProps {
   isOpen: boolean;
   onClose: () => void;
   show: Show | null;
-  seasons: Season[] | undefined;
+  seasons?: Season[] | undefined;
   onSuccess?: () => void;
 }
 
@@ -17,25 +17,10 @@ export const PublishSeriesModal: React.FC<PublishSeriesModalProps> = ({
   isOpen,
   onClose,
   show,
-  seasons,
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Compute number of draft episodes across all seasons
-  const draftEpisodesCount = React.useMemo(() => {
-    if (!seasons) return 0;
-    let count = 0;
-    for (const season of seasons) {
-      for (const ep of season.episodes || []) {
-        if (ep.status === 'draft') {
-          count++;
-        }
-      }
-    }
-    return count;
-  }, [seasons]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -87,10 +72,10 @@ export const PublishSeriesModal: React.FC<PublishSeriesModalProps> = ({
       <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-          <h2 className="text-lg font-bold text-white">Publish Series</h2>
+          <h2 className="text-lg font-bold text-white">Publish Show</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white text-2xl leading-none p-1 transition-colors"
+            className="text-slate-400 hover:text-white text-2xl leading-none p-1 transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             &times;
@@ -135,21 +120,10 @@ export const PublishSeriesModal: React.FC<PublishSeriesModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm border-t border-slate-800/80 pt-3">
-              <span className="text-slate-400 font-medium">Episodes Status:</span>
-              <div className="flex items-center gap-2 font-semibold">
-                {draftEpisodesCount > 0 ? (
-                  <>
-                    <span className="text-amber-400">
-                      {draftEpisodesCount} draft episode{draftEpisodesCount > 1 ? 's' : ''}
-                    </span>
-                    <span className="text-slate-500">&rarr;</span>
-                    <span className="text-emerald-400">Published</span>
-                  </>
-                ) : (
-                  <span className="text-slate-400">All episodes already published</span>
-                )}
-              </div>
+            <div className="text-xs text-slate-400 border-t border-slate-800/80 pt-3 leading-relaxed">
+              <p>
+                <strong className="text-slate-300">Publish Scope:</strong> Publishes this show only. Draft episodes remain in draft and can be published individually with required artwork and duration validation.
+              </p>
             </div>
           </div>
 
@@ -157,9 +131,9 @@ export const PublishSeriesModal: React.FC<PublishSeriesModalProps> = ({
           <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 leading-relaxed">
             <p className="font-semibold text-indigo-200 mb-1">Catalogue Deployment Notice</p>
             <p>
-              This action updates content records to published status in the database, but{' '}
-              <strong>does not deploy the live catalogue</strong>. An admin must publish the live
-              catalogue separately to make changes available to viewers.
+              This action updates the show to published status in the database, but{' '}
+              <strong>does not deploy the live catalogue</strong>. An admin must deploy the live
+              catalogue separately to make changes available in the Viewer.
             </p>
           </div>
         </div>

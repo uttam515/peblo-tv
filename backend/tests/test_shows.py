@@ -294,60 +294,69 @@ async def test_editor_and_admin_can_publish_series(client: AsyncClient):
     )
     assert ep2_res.status_code == 201
 
-    # Editor publishes series
+    # Editor publishes show
     pub_res = await client.post(f"/shows/{show_id}/publish", headers=editor_headers)
     assert pub_res.status_code == 200
     pub_data = pub_res.json()
     assert pub_data["show_id"] == show_id
     assert pub_data["show_status"] == "published"
-    assert pub_data["episodes_published_count"] == 2
+    assert pub_data["episodes_published_count"] == 0
 
     # Verify show is published
     show_check = await client.get(f"/shows/{show_id}", headers=editor_headers)
     assert show_check.json()["status"] == "published"
 
-    # Verify episodes are published
+    # Verify draft episodes remain draft (separated publishing semantics)
     eps_check = await client.get(f"/seasons/{season_id}/episodes", headers=editor_headers)
-    assert all(e["status"] == "published" for e in eps_check.json())
+    assert all(e["status"] == "draft" for e in eps_check.json())
 
 
 @pytest.mark.asyncio
-async def test_publish_series_missing_duration_returns_422(client: AsyncClient):
+async def test_publish_show_with_zero_episodes_succeeds(client: AsyncClient):
     token = await get_auth_token(client, "editor_user", "editorpass123")
     headers = {"Authorization": f"Bearer {token}"}
 
     create_show_res = await client.post(
         "/shows",
         headers=headers,
-        json={"title": "Invalid Series", "slug": "inv-series", "section": "series", "status": "draft"},
+        json={"title": "Empty Show", "slug": "empty-show", "section": "series", "status": "draft"},
     )
+    assert create_show_res.status_code == 201
     show_id = create_show_res.json()["id"]
 
-    create_season_res = await client.post(
-        f"/shows/{show_id}/seasons",
-        headers=headers,
-        json={"season_number": 1, "title": "Season 1"},
-    )
-    season_id = create_season_res.json()["id"]
-
-    # Draft episode with missing duration
-    await client.post(
-        f"/seasons/{season_id}/episodes",
-        headers=headers,
-        json={
-            "episode_id": "inv-ep-1",
-            "episode_number": 1,
-            "title": "Ep No Duration",
-            "content_group": "cg-inv-1",
-            "language": "en",
-            "duration_seconds": None,
-            "status": "draft",
-        },
-    )
-
+    # Show has 0 seasons and 0 episodes
     pub_res = await client.post(f"/shows/{show_id}/publish", headers=headers)
-    assert pub_res.status_code == 422
-    assert "missing duration_seconds" in str(pub_res.json())
+    assert pub_res.status_code == 200
+    assert pub_res.json()["show_status"] == "published"
+
+    # Verify show is now published
+    show_check = await client.get(f"/shows/{show_id}", headers=headers)
+    assert show_check.json()["status"] == "published"
+
+
+@pytest.mark.asyncio
+async def test_create_and_get_show_with_null_section(client: AsyncClient):
+    token = await get_auth_token(client, "editor_user", "editorpass123")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_show_res = await client.post(
+        "/shows",
+        headers=headers,
+        json={"title": "Null Section Show", "slug": "null-sec-show", "section": None, "status": "draft"},
+    )
+    assert create_show_res.status_code == 201
+    show_id = create_show_res.json()["id"]
+    assert create_show_res.json()["section"] is None
+
+    # Retrieve by ID
+    get_res = await client.get(f"/shows/{show_id}", headers=headers)
+    assert get_res.status_code == 200
+    assert get_res.json()["section"] is None
+
+    # Publishing show with null section succeeds in CMS (metadata publish)
+    pub_res = await client.post(f"/shows/{show_id}/publish", headers=headers)
+    assert pub_res.status_code == 200
+    assert pub_res.json()["show_status"] == "published"
 
 
 @pytest.mark.asyncio

@@ -193,10 +193,8 @@ describe('CMS UX & Publishing Workflow Improvements', () => {
 
     expect(screen.getByTestId('publish-series-modal')).toBeInTheDocument();
     expect(screen.getByTestId('publish-series-title')).toHaveTextContent('Rhyme Rangers');
-    expect(screen.getByText(/1 draft episode/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/This action updates content records to published status/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Publishes this show only/i)).toBeInTheDocument();
+    expect(screen.getByText(/Draft episodes remain in draft/i)).toBeInTheDocument();
     expect(
       screen.getByText(/does not deploy the live catalogue/i)
     ).toBeInTheDocument();

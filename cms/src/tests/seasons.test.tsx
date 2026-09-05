@@ -566,4 +566,89 @@ describe('Show Detail & Seasons Management', () => {
       expect(screen.getByText(/No seasons found for this show yet/i)).toBeInTheDocument();
     });
   });
+
+  it('safely renders and allows publishing a show with null section and zero seasons', async () => {
+    const showWithNullSection = {
+      ...mockShow,
+      id: 99,
+      title: 'Work In Progress Show',
+      slug: 'wip-show',
+      section: null,
+      description: null,
+      status: 'draft',
+      categories: [],
+    };
+
+    const fetchSpy = vi.spyOn(window, 'fetch').mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.includes('/auth/me')) {
+        return Promise.resolve(
+          new Response(JSON.stringify(mockGetMe()), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      }
+      if (url.includes('/shows/99/publish') && init?.method === 'POST') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              show_id: 99,
+              show_title: 'Work In Progress Show',
+              show_status: 'published',
+              episodes_published_count: 0,
+              message: 'Show published successfully.',
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        );
+      }
+      if (url.includes('/shows/99/seasons')) {
+        return Promise.resolve(
+          new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      }
+      if (url.includes('/shows/99')) {
+        return Promise.resolve(
+          new Response(JSON.stringify(showWithNullSection), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        );
+      }
+      return Promise.reject(new Error(`Unhandled: ${url}`));
+    });
+
+    renderShowDetailPage('99');
+
+    // Verify page renders cleanly without white screen
+    await waitFor(() => {
+      expect(screen.getByTestId('show-title')).toHaveTextContent('Work In Progress Show');
+      expect(screen.getByTestId('show-section-tag')).toHaveTextContent('No Section');
+      expect(screen.getByTestId('seasons-empty')).toBeInTheDocument();
+    });
+
+    // Open Publish Show modal
+    const publishBtn = screen.getByTestId('publish-series-btn');
+    fireEvent.click(publishBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publish-series-modal')).toBeInTheDocument();
+      expect(screen.getByText(/Publishes this show only/i)).toBeInTheDocument();
+    });
+
+    // Confirm publish
+    const confirmBtn = screen.getByTestId('confirm-publish-series-btn');
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith(
+        '/shows/99/publish',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+  });
 });
