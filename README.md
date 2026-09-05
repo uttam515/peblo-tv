@@ -122,7 +122,7 @@ Fine for this scale. Would stop being fine if the catalogue JSON grows large eno
 
 ## AI Usage
 
-Used GitHub Copilot for boilerplate — initial file scaffolding, repetitive schema definitions, test fixture setup, and the nginx config. Core logic (publish atomicity, content-group collapse, bootstrap detection, status diff) I wrote myself. Reviewed and ran everything before committing.
+Used Claude / Antigravity for boilerplate — initial file scaffolding, repetitive schema definitions, test fixture setup, and the nginx config. Core logic (publish atomicity, content-group collapse, bootstrap detection, status diff) I wrote myself. Reviewed and ran everything before committing.
 
 ---
 
